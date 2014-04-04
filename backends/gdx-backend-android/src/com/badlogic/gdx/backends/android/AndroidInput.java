@@ -153,7 +153,6 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 		this.app = activity;
 		this.context = context;
 		this.sleepTime = config.touchSleepTime;
-		int sdkVersion = android.os.Build.VERSION.SDK_INT;
 		touchHandler = new AndroidMultiTouchHandler();
 		hasMultitouch = touchHandler.supportsMultitouch(context);
 
@@ -458,6 +457,7 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 				String chars = e.getCharacters();
 				for (int i = 0; i < chars.length(); i++) {
 					event = usedKeyEvents.obtain();
+					event.timeStamp = System.nanoTime();
 					event.keyCode = 0;
 					event.keyChar = chars.charAt(i);
 					event.type = KeyEvent.KEY_TYPED;
@@ -473,6 +473,7 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 			switch (e.getAction()) {
 			case android.view.KeyEvent.ACTION_DOWN:
 				event = usedKeyEvents.obtain();
+				event.timeStamp = System.nanoTime();
 				event.keyChar = 0;
 				event.keyCode = e.getKeyCode();
 				event.type = KeyEvent.KEY_DOWN;
@@ -487,7 +488,9 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 				keys.put(event.keyCode, null);
 				break;
 			case android.view.KeyEvent.ACTION_UP:
+				long timeStamp = System.nanoTime();
 				event = usedKeyEvents.obtain();
+				event.timeStamp = timeStamp;
 				event.keyChar = 0;
 				event.keyCode = e.getKeyCode();
 				event.type = KeyEvent.KEY_UP;
@@ -499,6 +502,7 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 				keyEvents.add(event);
 
 				event = usedKeyEvents.obtain();
+				event.timeStamp = timeStamp;
 				event.keyChar = character;
 				event.keyCode = 0;
 				event.type = KeyEvent.KEY_TYPED;
@@ -688,10 +692,26 @@ public class AndroidInput implements Input, OnKeyListener, OnTouchListener {
 			if (realId[i] == -1) return i;
 		}
 
-		int[] tmp = new int[realId.length + 1];
-		System.arraycopy(realId, 0, tmp, 0, realId.length);
-		realId = tmp;
-		return tmp.length - 1;
+		realId = resize(realId);
+		touchX = resize(touchX);
+		touchY = resize(touchY);
+		deltaX = resize(deltaX);
+		deltaY = resize(deltaY);
+		touched = resize(touched);
+		
+		return len;
+	}
+	
+	private int[] resize(int[] orig) {
+		int[] tmp = new int[orig.length + 2];
+		System.arraycopy(orig, 0, tmp, 0, orig.length);
+		return tmp;
+	}
+	
+	private boolean[] resize(boolean[] orig) {
+		boolean[] tmp = new boolean[orig.length + 2];
+		System.arraycopy(orig, 0, tmp, 0, orig.length);
+		return tmp;
 	}
 
 	public int lookUpPointerIndex (int pointerId) {

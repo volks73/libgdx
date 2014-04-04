@@ -15,8 +15,6 @@ import java.util.Iterator;
  * {@link ChangeEvent#cancel()}.
  * @author Nathan Sweet */
 public class Selection<T> implements Disableable, Iterable<T> {
-	static boolean isMac = System.getProperty("os.name").contains("Mac");
-
 	private Actor actor;
 	final ObjectSet<T> selected = new ObjectSet();
 	private final ObjectSet<T> old = new ObjectSet();
@@ -38,13 +36,13 @@ public class Selection<T> implements Disableable, Iterable<T> {
 		if (item == null) throw new IllegalArgumentException("item cannot be null.");
 		if (isDisabled) return;
 		snapshot();
-		if ((toggle || (!required && selected.size == 1) || isCtrlPressed()) && selected.contains(item)) {
+		if ((toggle || (!required && selected.size == 1) || UIUtils.ctrl()) && selected.contains(item)) {
 			if (required && selected.size == 1) return;
 			selected.remove(item);
 			lastSelected = null;
 		} else {
 			boolean modified = false;
-			if (!multiple || (!toggle && !isCtrlPressed())) {
+			if (!multiple || (!toggle && !UIUtils.ctrl())) {
 				modified = selected.size > 0;
 				selected.clear();
 			}
@@ -183,6 +181,7 @@ public class Selection<T> implements Disableable, Iterable<T> {
 	/** Called when the selection changes.
 	 * @return true if the change should be undone. */
 	public boolean fireChangeEvent () {
+		if (actor == null) return false;
 		ChangeEvent changeEvent = Pools.obtain(ChangeEvent.class);
 		try {
 			return actor.fire(changeEvent);
@@ -207,6 +206,10 @@ public class Selection<T> implements Disableable, Iterable<T> {
 
 	public Array<T> toArray () {
 		return selected.iterator().toArray();
+	}
+
+	public Array<T> toArray (Array<T> array) {
+		return selected.iterator().toArray(array);
 	}
 
 	/** If true, prevents {@link #choose(Object)} from changing the selection. Default is false. */
@@ -250,11 +253,7 @@ public class Selection<T> implements Disableable, Iterable<T> {
 		this.programmaticChangeEvents = programmaticChangeEvents;
 	}
 
-	/** Returns true if ctrl is currently pressed, except on Mac OS X where it returns true if command is currently pressed. */
-	static public boolean isCtrlPressed () {
-		if (isMac)
-			return Gdx.input.isKeyPressed(Keys.SYM);
-		else
-			return Gdx.input.isKeyPressed(Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Keys.CONTROL_RIGHT);
+	public String toString () {
+		return selected.toString();
 	}
 }
